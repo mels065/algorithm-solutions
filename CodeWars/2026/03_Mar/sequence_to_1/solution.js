@@ -3,7 +3,6 @@ function seqToOne(n) {
 
   const change = -(n / Math.abs(n));
   const result = [];
-  console.log(change);
 
   for (let i = n; i !== 1; i += change) {
     result.push(i);
