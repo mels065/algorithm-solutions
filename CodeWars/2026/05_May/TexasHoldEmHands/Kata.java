@@ -4,12 +4,14 @@
 public record Hand(String type, String[] ranks) {}
 */
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import org.apache.commons.lang3.ArrayUtils;
 
-record SuitCount(char suit, int count, int strength) {
+record SuitCount(char suit, int count, int strength, String[] hand) {
   SuitCount(char suit) {
-    this(suit, 0, 0);
+    this(suit, 0, 0, new String[]{});
   }
 }
 record FlushData(boolean isFlush, SuitCount suitCount) {}
@@ -17,6 +19,7 @@ record FlushData(boolean isFlush, SuitCount suitCount) {}
 public class Kata {
     public static Hand hand(String[] holeCards, String[] communityCards) {
         String[] cards = ArrayUtils.addAll(holeCards, communityCards);
+        Arrays.sort(cards, Comparator.comparing(Kata::getRank));
       
         System.out.println(highestSuitCount(cards));
         return new Hand("nothing", new String[] { "A", "Q", "9", "6", "3" });
@@ -37,10 +40,17 @@ public class Kata {
       return new FlushData(true, suitCountMap.get("♣"));
     }
   
-    private static int convertRankToInt(String rank) {
+    private static String getSuit(String card) {
+      return card.substring(1, 2);
+    }
+  
+    private static int getRank(String card) {
+      String rank = card.substring(1, 2);
       return switch(rank) {
           case "A" -> 1;
-          case "J", "Q", "K" -> 11;
+          case "J" -> 11;
+          case "Q" -> 12;
+          case "K" -> 13;
           default -> Integer.parseInt(rank);
       };
     }
