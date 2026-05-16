@@ -6,7 +6,6 @@ public record Hand(String type, String[] ranks) {}
 
 import java.lang.IllegalArgumentException;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.regex.*;
