@@ -33,11 +33,11 @@ class Card implements Comparable<Card> {
     return suit;
   }
   
-  public String getRank() {
+  public String getRankString() {
     return rank;
   }
   
-  public int getRankAsInt() {
+  private int getRankValue() {
     return switch(rank) {
         case "A" -> 1;
         case "J" -> 11;
@@ -49,12 +49,12 @@ class Card implements Comparable<Card> {
   
   @Override
   public String toString() {
-    return String.valueOf(rank) + String.valueOf(suit);
+    return rank + String.valueOf(suit);
   }
   
   @Override
   public int compareTo(Card otherCard) {
-    return Integer.compare(getRankAsInt(), otherCard.getRankAsInt());
+    return Integer.compare(getRankValue(), otherCard.getRankValue());
   }
   
   public static Card[] convertStringsToCards(String[] cardStrings) {
