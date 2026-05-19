@@ -8,6 +8,7 @@ import java.lang.IllegalArgumentException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.regex.*;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -91,6 +92,10 @@ class FlushData implements Comparable<FlushData> {
     cards = ArrayUtils.add(cards, card);
   }
   
+  public boolean hasFlush() {
+    return cards.length >= 5;
+  }
+  
   @Override
   public int compareTo(FlushData otherFlushData) {
     return Card.compare(
@@ -107,41 +112,24 @@ class FlushData implements Comparable<FlushData> {
   public static int compare(FlushData fd1, FlushData fd2) {
     return fd1.compareTo(fd2);
   }
-}
-
-class FlushDataMap {
-  private HashMap<String, FlushData> flushDataMap;
   
-  public FlushDataMap() {
-    flushDataMap = new HashMap<String, FlushData>();
+  public static Optional<FlushData> getFlushData(Card[] cards) {
+    HashMap<String, FlushData> flushDataMap = new HashMap<String, FlushData>();
     flushDataMap.put("♣", new FlushData('♣'));
     flushDataMap.put("♥", new FlushData('♥'));
     flushDataMap.put("♠", new FlushData('♠'));
     flushDataMap.put("♦", new FlushData('♦'));
-  }
-  
-  public void addCards(Card[] cards) {
+    
     for (Card crd: cards) {
-      addCard(crd);
+      FlushData fd = flushDataMap.get(String.valueOf(crd.getSuit()));
+      fd.addCard(crd);
     }
-  }
-  
-  public boolean hasFlush() {
+    
     return flushDataMap
       .values()
       .stream()
-      .anyMatch(fd -> fd.cards.length >= 5);
-  }
-  
-  public FlushData getStrongestSuit() throws NoSuchElementException {
-    return flushDataMap
-      .values()
-      .stream()
-      .max(FlushData::compare).get();
-  }
-  
-  private void addCard(Card card) {
-    flushDataMap.get(String.valueOf(card.getSuit())).addCard(card);
+      .filter(fd -> fd.hasFlush())
+      .max(FlushData::compare);
   }
 }
 
@@ -150,8 +138,7 @@ public class Kata {
         Card[] cards = Card.convertStringsToCards(ArrayUtils.addAll(holeCards, communityCards));
         
         Arrays.sort(cards);
-        FlushDataMap flushDataMap = new FlushDataMap();
-        flushDataMap.addCards(cards);
+        Optional<FlushData> flushData = FlushData.getFlushData(cards);
 
         return new Hand("nothing", new String[] { "A", "Q", "9", "6", "3" });
     }
