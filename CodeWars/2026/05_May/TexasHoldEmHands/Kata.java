@@ -133,6 +133,91 @@ class FlushData implements Comparable<FlushData> {
   }
 }
 
+class StraightDataTree implements Comparable<StraightDataTree> {
+  class StraightDataTreeNode {
+    private int rank; // Indicates the rank of cards
+    private Card[] cards;
+    private StraightDataTreeNode nextNode;
+    
+    public StraightDataTreeNode(Card card) {
+      rank = card.getRankValue();
+      ArrayUtils.add(cards, card);
+    }
+    
+    public void connectNode(StraightDataTreeNode otherNode) {
+      nextNode = otherNode;
+    }
+    
+    public void addSibling(Card card) {
+      ArrayUtils.add(cards, card);
+    }
+    
+    public StraightDataTreeNode getNextNode() {
+      return nextNode;
+    }
+    
+    public int getRankValue() {
+      return rank;
+    }
+    
+    public Optional<Card> findCardWithSuit(char suit) {
+      for (Card crd: cards) {
+        if (suit == crd.getSuit()) {
+          return Optional<Card>.of(crd);
+        }
+      }
+      
+      return Optional<Card>.empty();
+    }
+    
+    public boolean isLast() {
+      return nextNode == null;
+    }
+  }
+  
+  private StraightDataTreeNode root;
+  
+  public StraightDataTree(Card card) {
+    root = new StraightDataTreeNode(card);
+  }
+  
+  public int getRootRank() {
+    return root.getRank();
+  }
+  
+  public void addCardToTree(Card card) {
+    StraightDataTreeNode lastNode = getLastNode();
+    
+    if (lastNode.getRankValue() == card.getRankValue) {
+      lastNode.addSibling(card);
+    } else {
+      lastNode.connectNode(otherTree.getRootNode());
+    }
+  }
+  
+  @Override
+  public int compareTo(StraightDataTree otherTree) {
+    return 0;
+  }
+  
+  private StraightDataTreeNode getRootNode() {
+    return root;
+  }
+  
+  private StraightDataTreeNode getLastNode() {
+    StraightDataTreeNode next = root;
+    while (!next.isLast()) {
+      next = next.getNextNode();
+    }
+    
+    return next;
+  }
+  
+  public static Optional<StraightDataTree> getStraightDataTree(Card[] card) {
+    return Optional.of(new StraightDataTree(card[0]));
+  }
+}
+
 public class Kata {
     public static Hand hand(String[] holeCards, String[] communityCards) {
         Card[] cards = Card.convertStringsToCards(ArrayUtils.addAll(holeCards, communityCards));
