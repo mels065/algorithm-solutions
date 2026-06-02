@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.regex.*;
+import java.util.ArrayList;
 import org.apache.commons.lang3.ArrayUtils;
 
 class Card implements Comparable<Card> {
@@ -37,7 +38,7 @@ class Card implements Comparable<Card> {
     return rank;
   }
   
-  private int getRankValue() {
+  public int getRankValue() {
     return switch(rank) {
         case "A" -> 1;
         case "J" -> 11;
@@ -136,7 +137,7 @@ class FlushData implements Comparable<FlushData> {
 class StraightDataTree implements Comparable<StraightDataTree> {
   class StraightDataTreeNode {
     private int rank; // Indicates the rank of cards
-    private Card[] cards;
+    private Card[] cards; // Can hold multiple cards if rank is equal
     private StraightDataTreeNode nextNode;
     
     public StraightDataTreeNode(Card card) {
@@ -152,47 +153,88 @@ class StraightDataTree implements Comparable<StraightDataTree> {
       ArrayUtils.add(cards, card);
     }
     
-    public StraightDataTreeNode getNextNode() {
-      return nextNode;
+    public Optional<StraightDataTreeNode> getNextNode() {
+      if (isLast()) {
+        return Optional.empty();
+      }
+      
+      return Optional.of(nextNode);
     }
     
     public int getRankValue() {
       return rank;
     }
     
+    public Card[] getCards() {
+      return cards.clone();
+    }
+    
     public Optional<Card> findCardWithSuit(char suit) {
       for (Card crd: cards) {
         if (suit == crd.getSuit()) {
-          return Optional<Card>.of(crd);
+          return Optional.of(crd);
         }
       }
       
-      return Optional<Card>.empty();
+      return Optional.empty();
     }
     
     public boolean isLast() {
       return nextNode == null;
     }
+    
+    public Optional<Card> getMatchingSuitCard(char suit) {
+      for (Card card: cards) {
+        if (card.getSuit() == suit) {
+          return Optional.of(card);
+        }
+      }
+      return Optional.empty();
+    }
   }
   
+  private final int MAX_SIZE = 5;
+  
   private StraightDataTreeNode root;
+  private int size;
   
   public StraightDataTree(Card card) {
     root = new StraightDataTreeNode(card);
+    size = 1;
   }
   
   public int getRootRank() {
-    return root.getRank();
+    return root.getRankValue();
   }
   
   public void addCardToTree(Card card) {
     StraightDataTreeNode lastNode = getLastNode();
     
-    if (lastNode.getRankValue() == card.getRankValue) {
+    if (lastNode.getRankValue() == card.getRankValue()) {
       lastNode.addSibling(card);
     } else {
-      lastNode.connectNode(otherTree.getRootNode());
+      lastNode.connectNode(new StraightDataTreeNode(card));
+      
+      if (size == MAX_SIZE) {
+        shiftRoot();
+      } else {
+        size++;
+      }
     }
+  }
+  
+  public boolean hasStraight() {
+    return size == MAX_SIZE;
+  }
+  
+  public Optional<Card[]> getFlushStraight() {
+    if (!hasStraight()) {
+      return Optional.empty();
+    }
+    
+    Optional<Card[]> strongestPotentialFlushStraight = traverseForFlushStraight(getRootNode());
+    
+    return strongestPotentialFlushStraight;
   }
   
   @Override
@@ -204,13 +246,87 @@ class StraightDataTree implements Comparable<StraightDataTree> {
     return root;
   }
   
+  private boolean shiftRoot() {
+    Optional<StraightDataTreeNode> nextNode = root.getNextNode();
+    if (nextNode.isPresent()) {
+      root = nextNode.get();
+      return true;
+    }
+    return false;
+  }
+  
   private StraightDataTreeNode getLastNode() {
     StraightDataTreeNode next = root;
     while (!next.isLast()) {
-      next = next.getNextNode();
+      next = next.getNextNode().get();
     }
     
     return next;
+  }
+  
+  // Initial call
+  private Optional<Card[]> traverseForFlushStraight(StraightDataTreeNode node) {
+    Card[] nodeCards = node.getCards();
+    ArrayList<Card> potentialFlush;
+    
+    if (node.isLast()) {
+      return Optional.empty();
+    }
+    
+    for (Card card: nodeCards) {
+      potentialFlush = new ArrayList<Card>();
+      potentialFlush.add(card);
+      
+      Optional<Card[]> nextCards = traverseForFlushStraight(node.getNextNode().get(), card.getSuit());
+      
+      if (nextCards.isPresent()) {
+        for (Card otherCard: nextCards.get()) {
+          potentialFlush.add(otherCard);
+        }
+
+        if (potentialFlush.size() == MAX_SIZE) {
+          return Optional.of((Card[]) potentialFlush.toArray());
+        }
+      }
+    }
+    
+    return Optional.empty();
+  }
+  
+  // Recursive call
+  private Optional<Card[]> traverseForFlushStraight(StraightDataTreeNode node, char suit) {
+    Card[] nodeCards = node.getCards();
+    ArrayList<Card> potentialFlush;
+    if (node.isLast()) {
+      Optional<Card> matchingSuitCard = node.getMatchingSuitCard(suit);
+      
+      if (!matchingSuitCard.isPresent()) {
+        return Optional.empty();
+      }
+      
+      potentialFlush = new ArrayList<Card>();
+      potentialFlush.add(matchingSuitCard.get());
+      return Optional.of((Card[]) potentialFlush.toArray());
+    }
+    
+    for (Card card: nodeCards) {
+      if (card.getSuit() == suit) {
+        potentialFlush = new ArrayList<Card>();
+        potentialFlush.add(card);
+        
+        Optional<Card[]> nextCards = traverseForFlushStraight(node.getNextNode().get(), card.getSuit());
+        
+        if (nextCards.isPresent()) {
+          for (Card otherCard: nextCards.get()) {
+            potentialFlush.add(otherCard);
+          }
+          
+          return Optional.of((Card[]) potentialFlush.toArray());
+        }
+      }
+    }
+    
+    return Optional.empty();
   }
   
   public static Optional<StraightDataTree> getStraightDataTree(Card[] card) {
